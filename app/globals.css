@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-100/80 text-slate-900 antialiased selection:bg-emerald-600 selection:text-white min-h-screen font-sans;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+  }
+
+  /* Monospace figures */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Guilloche pattern for official certificates */
+.bg-guilloche {
+  background-color: #ffffff;
+  background-image: 
+    radial-gradient(#064e3b 0.75px, transparent 0.75px), 
+    radial-gradient(#064e3b 0.75px, #ffffff 0.75px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+  background-opacity: 0.04;
+}
+
+/* Subtle micro-grid pattern for GIS cadastral map background */
+.bg-cadastral-grid {
+  background-image: 
+    linear-gradient(to right, rgba(15, 23, 42, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Custom sleek scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Print Styles for Official Deed Receipt and Digital Porcha (Khatian) */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .printable-document {
+    position: relative !important;
+    box-shadow: none !important;
+    border: 2px solid #064e3b !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 800px !important;
+    page-break-after: avoid;
+    background: #ffffff !important;
+  }
+
+  /* Watermark for Hackathon Compliance */
+  .printable-document::after {
+    content: "SYNTHETIC DUMMY RECORD — LANDTECH 2026";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-32deg);
+    font-size: 34px;
+    font-weight: 900;
+    font-family: 'Inter', sans-serif;
+    color: rgba(225, 29, 72, 0.12);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+    letter-spacing: 2px;
+  }
+}
+
+/* Watermark in modal preview */
+.preview-watermark {
+  position: relative;
+}
+.preview-watermark::after {
+  content: "SYNTHETIC DUMMY RECORD — LANDTECH 2026";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-28deg);
+  font-size: 24px;
+  font-weight: 900;
+  font-family: 'Inter', sans-serif;
+  color: rgba(225, 29, 72, 0.08);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  letter-spacing: 2px;
+}
