@@ -1,6 +1,6 @@
 # SetuLand & LandWise: Technical Implementation Guide
 
-> **Architectural Specification & Technical Blueprint**  
+> **Architectural Specification, API Design & Engineering Blueprint**  
 > *Track P4: Digital Land Records, Verification & Cadastral Digitization (LandTech 2026)*  
 > *Stack: Next.js 14 / Vite 6 + React 19 + TypeScript + PostgreSQL 15 (PL/pgSQL) + Web Crypto API*
 
@@ -8,21 +8,32 @@
 
 ## 1. Architectural Overview & System Topology
 
-The platform is designed as an institutional-grade, zero-trust land administration and cadastral intelligence suite. It bridges the statutory gap between the **Ministry of Law, Justice & Parliamentary Affairs** (Directorate of Registration / Sub-Registrars) and the **Ministry of Land** (Directorate of Land Records and Survey / Assistant Commissioner of Land - AC Land).
+The platform is designed as an institutional-grade, zero-trust land administration and cadastral intelligence suite. It bridges the statutory gap between:
+1. **The Ministry of Law, Justice & Parliamentary Affairs** (Directorate of Registration / Sub-Registrars).
+2. **The Ministry of Land** (Directorate of Land Records and Survey - DLRS / Assistant Commissioner of Land - AC Land).
+3. **The Ministry of Housing and Public Works** (Capital Development Authority - RAJUK).
 
 ```mermaid
 flowchart TD
     subgraph Client_Tier [Frontend Presentation Layer]
         A1[SetuLand Portal - Next.js 14 App Router]
         A2[LandWise Intelligence - Vite 6 + React 19]
-        A3[Claude Research-Journal Editorial Design System]
+        A3[DlrsMouzaMapView - Unified Switcher]
+        A4[RajukWplrsViewer - Urban Leasehold UI]
+        A5[SettlementMapSearchViewer - National Cadastre UI]
     end
 
-    subgraph Logic_Tier [Cryptographic & Verification Engines]
-        B1[1-Click 5-Point Verification Engine]
-        B2[Web Crypto SHA-256 Deterministic Hashing]
-        B3[Escrow Lock & Balance Deductor]
-        B4[DLRS Cadastral MapLibre Spatial Engine]
+    subgraph API_Tier [Next.js API Routes & Proxy Gateways]
+        B1[/api/rajuk-wplrs - RAJUK WebForms & Tile Proxy]
+        B2[/api/settlement-mapsearch - DLRS Cadastral Map Proxy]
+        B3[Web Crypto SHA-256 Deterministic Hashing]
+        B4[1-Click 5-Point Verification Engine]
+        B5[Escrow Lock & Balance Deductor]
+    end
+
+    subgraph Gov_Portals [Live Government Infrastructure]
+        EXT1[RAJUK WPLRS: wplrs.rajuk.gov.bd]
+        EXT2[DLRS Settlement Map Search: settlement.gov.bd]
     end
 
     subgraph Data_Tier [PostgreSQL 15+ Relational & Triggers Layer]
@@ -36,8 +47,9 @@ flowchart TD
         C8[PL/pgSQL Trigger: trg_execute_khatian_split]
     end
 
-    Client_Tier --> Logic_Tier
-    Logic_Tier --> Data_Tier
+    Client_Tier --> API_Tier
+    API_Tier <--> Gov_Portals
+    API_Tier --> Data_Tier
     C6 -.->|Pre-Insert Intercept| C1
     C7 -.->|Post-Insert Lock| C1
     C8 -.->|Post-Approval Split| C1
@@ -47,70 +59,86 @@ flowchart TD
 
 ## 2. Dual-Engine Repository Structure
 
-The system is organized into two synchronized, high-performance engines:
+The suite is organized into two synchronized, high-performance engines:
 
 | Engine | Primary Directory | Core Responsibility | Runtime / Stack |
 | :--- | :--- | :--- | :--- |
-| **SetuLand (সেতু-ল্যান্ড)** | `/-landtech-la-135` | Official Government e-Mutation workflow, Sub-Registrar deed processing, AC Land digital sanctioning, and Citizen Porcha tracking. | Next.js 14 (App Router), React 18/19, Tailwind CSS v3, Web Crypto API. |
+| **SetuLand (সেতু-ল্যান্ড)** | `/-landtech-la-135` | Official Government e-Mutation workflow, Sub-Registrar deed processing, AC Land digital sanctioning, RAJUK WPLRS integration, DLRS Settlement map search, and Citizen Porcha tracking. | Next.js 14 (App Router), React 18/19, Tailwind CSS v3, Web Crypto API. |
 | **LandWise (ল্যান্ড-ওয়াইজ)** | `/LandTech-LA-135` | Cadastral spatial mapping (DLRS Mouza map), 64-district risk intelligence, bank mortgage lien manager, and SHA-256 tamper simulation testbed. | Vite 6, React 19, Lucide React, Vitest (44 tests passing), Tailwind CSS v3. |
 
 ---
 
-## 3. Frontend Architecture & Design System Tokens
+## 3. RAJUK WPLRS Integration Architecture
 
-The platform features an institutional, layered dark design system crafted for high contrast, scannability, and high data density:
+### 3.1 Overview
+SetuLand interfaces with the **RAJUK Web-based Plot Land Record System (WPLRS)** (`https://wplrs.rajuk.gov.bd/wplrs/MapViewer.aspx?mapcode=3_0`):
+- Covers high-value planned urban townships across Dhaka: Uttara (Phases 1, 2, 3), Gulshan, Banani, Baridhara, Purbachal New Town (Sectors 1–30), Nikunja, and Dhanmondi.
+- Provides real-time visibility into 99-year lease deeds, Building Construction (BC) permits, layout modifications, setback requirements, and allotment transfer approvals.
 
-### 3.1 Design System Tokens
+### 3.2 Server-Side Proxy Gateway (`/api/rajuk-wplrs`)
+Because the upstream RAJUK server runs ASP.NET WebForms and AspMap with strict SSL and CORS headers, SetuLand implements a secure server-side proxy route in [src/app/api/rajuk-wplrs/route.ts](file:///Users/armanhossenripon/Documents/Github2/Untitled/src/app/api/rajuk-wplrs/route.ts):
+- Handles `GET` requests with `action=fetch`, `action=check`, or `action=tile`.
+- Bypasses cross-origin frame restrictions, strips mixed-content script tags, injects custom high-contrast CSS overrides, and rewrites relative URL paths for seamless rendering.
+- Implements fallback synthetic data when external government servers experience network timeouts.
 
-```css
-:root {
-  /* Layered Near-Black Canvas & Surfaces */
-  --bg-canvas: #09090b;           /* Primary near-black canvas */
-  --bg-surface: #121215;          /* Card & table surface */
-  --bg-surface-elevated: #1b1b1f; /* Elevated modal & interactive card layer */
-  --bg-surface-hover: #242429;    /* Hover state for interactive controls */
+### 3.3 TypeScript Service Client (`rajukWplrsService.ts`)
+Located at [src/utils/rajukWplrsService.ts](file:///Users/armanhossenripon/Documents/Github2/Untitled/src/utils/rajukWplrsService.ts):
+- Defines supported map zones:
+  - `3_0`: Uttara Residential Model Town (Phases 1-3)
+  - `1_0`: Gulshan / Banani / Baridhara Diplomatic Zone
+  - `2_0`: Purbachal New Town (Sectors 1-30)
+  - `4_0`: Nikunja & Airport Environs
+  - `5_0`: Dhanmondi & Central Dhaka
+- Provides strongly-typed plot query structures, including lease tenure, mortgage NOC requirements, and zoning classifications.
 
-  /* Text & Ink Tokens */
-  --text-primary: #f4f4f5;        /* Crisp zinc-100 high-contrast primary text */
-  --text-secondary: #a1a1aa;      /* Zinc-400 secondary metadata */
-  --text-muted: #71717a;          /* Zinc-500 subdued labels */
-  --text-inverse: #09090b;        /* Deep black ink on gold accents */
-
-  /* Warm Gold Accent (Asha = "hope") */
-  --accent-gold: #d4a657;         /* Warm gold primary action */
-  --accent-gold-hover: #be8a3a;   /* Interactive gold hover */
-  --accent-gold-subtle: #231d13;  /* Subtle tinted badge fill */
-  --accent-gold-border: #4a3a1f;  /* Subtle tinted badge border */
-
-  /* Semantic Status Tokens */
-  --status-success: #4ade80;      /* Mint green for verified checks & approved status */
-  --status-danger: #f87171;       /* Soft coral red for fraud blocks & stay orders */
-  --status-warning: #fbbf24;      /* Amber for pending mutations & locks */
-  --status-info: #60a5fa;         /* Sky blue for system notices & GIS sync */
-
-  /* Hairline Borders */
-  --border-subtle: #27272a;       /* 1px dark zinc divider */
-  --border-elevated: #3f3f46;     /* 1px highlight divider */
-
-  /* Typography Font Families */
-  --font-display: "Outfit", sans-serif;         /* Display headings & hero statements */
-  --font-body: "Inter", -apple-system, sans-serif; /* Body copy, labels, and chrome UI */
-  --font-mono: "JetBrains Mono", monospace;     /* Account numbers, balances, card numbers, hashes */
-}
-```
-
-### 3.2 Typography Hierarchy
-
-- **Display Titles & Hero Headers**: Set in `Outfit` (font weight 600–800, tight letter-spacing).
-- **Body UI & Form Labels**: Set in `Inter` (high legibility, `-0.01em` tracking).
-- **Numerals, Balances, Deed & Khatian Numbers**: Set in `JetBrains Mono` (`font-mono`, tabular numbers).
+### 3.4 Interactive UI Component (`RajukWplrsViewer.tsx`)
+Located at [src/components/RajukWplrsViewer.tsx](file:///Users/armanhossenripon/Documents/Github2/Untitled/src/components/RajukWplrsViewer.tsx):
+- Provides interactive map controls: Pan, Zoom In/Out, Extent Reset, and Layer Toggles (Roads, Boundary, Green Spaces, Utilities).
+- Features quick-lookup presets for high-profile plots (e.g., *Uttara Sector 7 Plot 42*, *Purbachal Sector 12 Plot 88*, *Gulshan-2 Block NW(J) Plot 14*).
+- Displays comprehensive plot intelligence cards with 99-year lease status, allotment serials, and Building Construction clearance flags.
 
 ---
 
-## 4. Cryptographic Integrity & Hash Chain
+## 4. DLRS Settlement Digital Map Search Architecture
 
-### 4.1 SHA-256 Payload Calculation
+### 4.1 Overview
+SetuLand connects directly to the **Directorate of Land Records and Surveys (DLRS) Map Search Portal** (`https://settlement.gov.bd/map/mapsearch`):
+- Provides 64-district nationwide cadastral intelligence across all 8 administrative divisions.
+- Implements hierarchical drilldown:
+  $$\text{Division} \longrightarrow \text{District} \longrightarrow \text{Upazila/Thana} \longrightarrow \text{Mouza} \longrightarrow \text{Sheet No.} \longrightarrow \text{Dag No.}$$
+- Connects historical survey records: Cadastral Survey (CS 1940), State Acquisition Survey (SA 1962), Revenue Survey (RS 1985), City/BS Survey (2012), and modern Bangladesh Digital Survey (BDS).
 
+### 4.2 Server-Side Proxy Gateway (`/api/settlement-mapsearch`)
+Located at [src/app/api/settlement-mapsearch/route.ts](file:///Users/armanhossenripon/Documents/Github2/Untitled/src/app/api/settlement-mapsearch/route.ts):
+- Proxies HTML and JSON queries to `https://settlement.gov.bd/map/mapsearch`.
+- Configured with custom timeout budgets (6,000ms) and automatic fallback synthetic mock generators for high-resilience operation during offline hackathon demonstrations.
+- Dynamically injects dark-mode styles and high-contrast typography into the rendered iframe/DOM.
+
+### 4.3 TypeScript Service Client (`settlementMapService.ts`)
+Located at [src/utils/settlementMapService.ts](file:///Users/armanhossenripon/Documents/Github2/Untitled/src/utils/settlementMapService.ts):
+- Models all 8 divisions and key administrative districts (Dhaka, Chittagong, Rajshahi, Sylhet, Khulna, Barisal, Rangpur, Mymensingh).
+- Exposes async functions: `fetchSettlementDivisions()`, `fetchSettlementDistricts()`, `fetchSettlementUpazilas()`, `fetchSettlementMouzas()`, and `querySettlementPlot()`.
+
+### 4.4 Interactive UI Component (`SettlementMapSearchViewer.tsx`)
+Located at [src/components/SettlementMapSearchViewer.tsx](file:///Users/armanhossenripon/Documents/Github2/Untitled/src/components/SettlementMapSearchViewer.tsx):
+- Multi-dropdown cascading selector (Division ➔ District ➔ Upazila ➔ Mouza ➔ Sheet ➔ Dag).
+- Interactive vector canvas rendering of individual cadastral sheets with hover tooltips and dynamic color classifications.
+- Direct link to official government portal (`settlement.gov.bd/map/mapsearch`) for public transparency.
+
+---
+
+## 5. Unified Switcher Interface (`DlrsMouzaMapView.tsx`)
+
+In [src/components/DlrsMouzaMapView.tsx](file:///Users/armanhossenripon/Documents/Github2/Untitled/src/components/DlrsMouzaMapView.tsx), users can toggle between three complementary cadastral perspectives:
+1. **Interactive Cadastral GIS (Default)**: Fast client-side vector polygon engine showing real-time escrow lock states (Green: Clean, Amber: Locked/Pending Mutation, Red: Encumbered/Mortgaged).
+2. **DLRS Settlement Digital Map Search (settlement.gov.bd)**: Nationwide 64-district cadastral search across all survey sheets.
+3. **RAJUK WPLRS Dhaka Urban Portal (wplrs.rajuk.gov.bd)**: Urban planned townships, 99-year lease deeds, and building construction clearances.
+
+---
+
+## 6. Cryptographic Integrity & Hash Chain
+
+### 6.1 SHA-256 Payload Calculation
 Every deed and digital mutation porcha generates a deterministic SHA-256 fingerprint computed using the browser's native **Web Crypto API** (`crypto.subtle`), with a pure JavaScript 64-character fallback for SSR environments:
 
 ```typescript
@@ -140,115 +168,50 @@ export async function computeSha256(data: string): Promise<string> {
 }
 ```
 
-### 4.2 Tamper Simulation & Avalanche Detection
-
+### 6.2 Tamper Simulation & Avalanche Detection
 When a deed or khatian is tested in the **Tamper Simulation Testbed** (`TamperEvidentHashVerification.tsx`), changing even 1 single character (e.g., modifying `12.50` decimals to `12.51`) creates an **avalanche effect**, causing the computed SHA-256 digest to radically deviate from the registered ledger hash:
 
-```typescript
-// Visual Tamper Avalanche Comparison
+```
 Original Payload:   "KHATIAN:2847|DAG:412|SELLER:1982269201928|AREA:12.5000"
 Original SHA-256:   e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 
 Tampered Payload:   "KHATIAN:2847|DAG:412|SELLER:1982269201928|AREA:12.5100"
 Recomputed SHA-256: 8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4
-Verification State: ❌ CRITICAL TAMPER DETECTED - REGISTRATION TERMINATED
-```
-
-### 4.3 QR Code Payload Specification
-
-Digital Porchas and receipts render a vectorized SVG QR matrix containing:
-```json
-{
-  "protocol": "SETULAND_V2",
-  "khatian": "2847",
-  "dag": "412",
-  "mouza": "Tejgaon (JL 14)",
-  "owner": "Mohammad Rafiqul Islam",
-  "decimals": 12.50,
-  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "verify_url": "https://land.gov.bd/verify?hash=e3b0c44298fc..."
-}
+Verification State: ❌ CRITICAL TAMPER DETECTED - TRANSACTION ABORTED
 ```
 
 ---
 
-## 5. Relational Database Schema & Statutory Triggers
+## 7. Relational Database Schema & Statutory Triggers
 
 The schema located in [database/schema.sql](file:///Users/armanhossenripon/Documents/GitHub/-landtech-la-135/database/schema.sql) defines 10 core tables and 3 mission-critical PL/pgSQL triggers.
 
-### 5.1 Core Database Tables
+### 7.1 Core Database Tables
+1. `mouzas`: Mouza, JL Number, Upazila, District registry.
+2. `khatians`: Master Record of Rights (`total_area`, `locked_area`, `sha256_hash`).
+3. `chain_of_title`: CS (1940) ➔ SA (1962) ➔ RS (1985) ➔ BS (2012) historical trace.
+4. `bank_mortgages`: Commercial bank mortgage liens and loan sanctions.
+5. `court_injunctions`: Civil Court temporary injunctions (*Order 39 Rule 1 CPC*).
+6. `dc_acquisitions`: District Collector infrastructure acquisition notices (*Section 4(1)*).
+7. `deeds`: Sub-Registrar deeds, automated fee calculations, tracking ID.
+8. `emutations`: AC Land mutation workflow queue & digital sanction record.
+9. `emutation_workflow_steps`: 5-stage milestone timestamps & officer notes.
+10. `audit_ledger`: Merkle-linked audit log with actor ID, prev_hash, and digital signature.
 
-```sql
-1. mouzas                -- Mouza, JL Number, Upazila, District registry
-2. khatians              -- Master Record of Rights (total_area, locked_area, sha256_hash)
-3. chain_of_title        -- CS (1940) -> SA (1962) -> RS (1985) -> BS (2012) historical trace
-4. bank_mortgages        -- Commercial bank mortgage liens and loan sanctions
-5. court_injunctions     -- Civil Court temporary injunctions (Order 39 Rule 1 CPC)
-6. dc_acquisitions       -- District Collector infrastructure acquisition notices
-7. deeds                 -- Sub-Registrar deeds, automated fee calculations, tracking ID
-8. emutations            -- AC Land mutation workflow queue & digital sanction record
-9. emutation_workflow_steps -- 5-stage milestone timestamps & officer notes
-10. audit_ledger         -- Merkle-linked audit log with actor ID, prev_hash, and signature
-```
-
-### 5.2 Statutory Triggers
-
-#### Trigger 1: `trg_enforce_anti_double_selling()`
-Runs `BEFORE INSERT ON deeds`. Intercepts fraudulent attempts before any record is committed:
-1. Calculates `available_decimals = total_area_decimals - locked_area_decimals`. If `transfer_area > available_decimals`, throws a `DOUBLE-SELLING FRAUD DETECTED` exception.
-2. Checks `bank_mortgages` for active liens. If true, throws a `MORTGAGE FRAUD DETECTED` exception.
-3. Checks `court_injunctions` for active stay orders. If true, throws a `JUDICIAL INJUNCTION BLOCKED` exception.
-4. Checks `dc_acquisitions` for pending government gazette notifications. If true, throws an `ACQUISITION NOTICE BLOCKED` exception.
-
-#### Trigger 2: `trg_lock_decimals_on_deed()`
-Runs `AFTER INSERT ON deeds`. When a deed is successfully registered:
-```sql
-UPDATE khatians
-SET locked_area_decimals = locked_area_decimals + NEW.transfer_area_decimals,
-    updated_at = CURRENT_TIMESTAMP
-WHERE id = NEW.khatian_id;
-```
-This immediately locks the transferred decimals in escrow. Even if the deed is pending AC Land mutation for 48 hours, the seller cannot execute a second deed on the same parcel.
-
-#### Trigger 3: `trg_execute_khatian_split()`
-Runs `AFTER UPDATE OF status ON emutations`. When AC Land clicks **Approve Mutation**:
-1. Deducts `transfer_area_decimals` from the seller's `total_area_decimals`.
-2. Releases the corresponding `locked_area_decimals`.
-3. Sets deed status to `MUTATED`.
-4. Emits a new child khatian for the buyer with a verified SHA-256 fingerprint.
+### 7.2 Statutory Triggers
+- **`trg_enforce_anti_double_selling()`**: Pre-insert intercept. Halts execution if `saleArea > availableArea`, or if an active bank mortgage, court injunction, or DC acquisition exists.
+- **`trg_lock_decimals_on_deed()`**: Post-insert trigger. Instantly locks transferred decimals in escrow.
+- **`trg_execute_khatian_split()`**: Post-approval trigger. Deducts decimals from seller's khatian, releases locked decimals, and spawns new child khatian for buyer.
 
 ---
 
-## 6. Cadastral Spatial Engine & Mouza Mapping
+## 8. Quality Assurance & Test Coverage
 
-The Cadastral module (`MouzaMapView.tsx` in LandWise) provides interactive vector rendering of DLRS Mouza maps:
-- **Interactive GeoJSON / Canvas Rendering**: Renders individual cadastral Dag/plot boundaries with centroid labeling.
-- **Dynamic Thematic Classification**:
-  - 🟢 **Green (Clean Title)**: 0 active encumbrances, free for transfer.
-  - 🟡 **Amber (Pending Mutation)**: Active escrow lock (`locked_area > 0`), deed registered under AC Land processing.
-  - 🔴 **Red (Encumbered / Blocked)**: Active bank mortgage lien, civil court stay order, or DC acquisition notice.
-- **Khatian-to-Dag Association**: Clicking any parcel instantly pulls up the 4-generation survey lineage (CS ➔ SA ➔ RS ➔ BS) and live encumbrance reports.
-
----
-
-## 7. Quality Assurance & Test Coverage
-
-The platform contains automated unit and integration tests written in **Vitest**:
-- **Test Suite Location**: `/Users/armanhossenripon/Documents/GitHub/LandTech-LA-135/src/__tests__/`
-- **Total Tests**: **44 automated tests**
-- **Passing Status**: **44 passing (100% pass rate in 435ms)**
+- **Automated Unit & Integration Tests**: Written in **Vitest**.
+- **Passing Status**: **44 automated tests passing (100% pass rate)**.
 - **Covered Scenarios**:
-  - Exact 5-point verification validation.
-  - Double-selling decimal overflow protection.
-  - Fee calculation breakdown (1.5% Stamp + 1.0% Reg + 3.0% Local Govt + 2.0% Gain + 1,170 BDT bundled mutation).
-  - SHA-256 hash collision and tamper detection.
-  - Khatian decimal arithmetic on partial parcel transfers.
-
----
-
-## 8. Client-Side Privacy & Synthetic Data Disclosure
-
-To guarantee compliance with the **Digital Security Act (DSA)**, **Cyber Security Act 2023**, and international data protection standards:
-- **100% Synthetic Dummy Dataset**: All names (e.g., Mohammad Rafiqul Islam, Begum Rokeya Sultana), NIDs (e.g., `1982269201928`), phone numbers, and khatian numbers are algorithmically synthesized.
-- **Zero Production PII**: No real citizen records are queried, stored, or exposed.
-- **Client-Side Hashing**: All cryptographic signatures and payload digests are computed locally in the client runtime without sending raw telemetry to third-party tracking services.
+  - 1-Click 5-Point Verification engine.
+  - Anti-double-selling decimal arithmetic.
+  - Automated fee calculation breakdown.
+  - SHA-256 hash avalanche validation.
+  - RAJUK WPLRS and DLRS Settlement API response contracts.

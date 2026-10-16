@@ -58,9 +58,11 @@ const BangladeshInteractiveMap = dynamic(
   }
 );
 import { HeroMapDossier } from './HeroMapDossier';
+import { RajukWplrsViewer } from './RajukWplrsViewer';
+import { SettlementMapSearchViewer } from './SettlementMapSearchViewer';
 
-// Map View Mode (Mouza Sheet vs 64-District National GIS vs Parcel Ledger)
-type MapViewMode = 'mouza_sheet' | 'national_gis' | 'parcel_ledger';
+// Map View Mode (Mouza Sheet vs 64-District National GIS vs DLRS Settlement vs RAJUK WPLRS vs Parcel Ledger)
+type MapViewMode = 'mouza_sheet' | 'national_gis' | 'settlement_map' | 'rajuk_wplrs' | 'parcel_ledger';
 
 // Basemap Display Styles ported from LandTech-LA-135
 type BasemapStyle = 'blueprint' | 'satellite' | 'zoning';
@@ -289,11 +291,25 @@ export const DlrsMouzaMapView: React.FC = () => {
                   ? (language === 'en' ? activeMouza.nameEn : activeMouza.nameBn)
                   : viewMode === 'national_gis'
                   ? (language === 'en' ? 'Bangladesh Interactive GIS Map (64 Districts & Vector Atlas)' : 'বাংলাদেশ ইন্টারঅ্যাক্টিভ জিআইএস মানচিত্র (৬৪ জেলা ও ভেক্টর অ্যাটলাস)')
+                  : viewMode === 'settlement_map'
+                  ? (language === 'en' ? 'DLRS National Cadastral Map Search (settlement.gov.bd)' : 'ডিএলআরএস জাতীয় মৌজা ও ক্যাডাস্ট্রাল ম্যাপ অনুসন্ধান')
+                  : viewMode === 'rajuk_wplrs'
+                  ? (language === 'en' ? 'RAJUK WPLRS Model Town GIS & Land Record System' : 'রাজউক ডব্লিউপিএলআরএস মডেল টাউন জিআইএস ও ভূমি রেকর্ড সিস্টেম')
                   : (language === 'en' ? 'Cadastral Parcel Registry Ledger' : 'ক্যাডাস্ট্রাল পার্সেল রেজিস্ট্রি খতিয়ান')}
               </span>
               {viewMode === 'mouza_sheet' && (
                 <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-amber-50 dark:bg-[#231d13] text-[#d4a657] border border-amber-200 dark:border-[#4a3a1f]">
                   {activeMouza.jlNo}
+                </span>
+              )}
+              {viewMode === 'settlement_map' && (
+                <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-amber-950 text-amber-400 border border-amber-800">
+                  settlement.gov.bd
+                </span>
+              )}
+              {viewMode === 'rajuk_wplrs' && (
+                <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-400 border border-emerald-800">
+                  wplrs.rajuk.gov.bd
                 </span>
               )}
             </h3>
@@ -307,6 +323,14 @@ export const DlrsMouzaMapView: React.FC = () => {
                 ? (language === 'en'
                     ? 'Explore Bangladesh with 4 view modes: MapLibre vector GIS, 64-district interactive SVG with OSRM route navigation, 8 administrative divisions, and satellite basemaps.'
                     : '৪টি ভিউ মোডে বাংলাদেশ অন্বেষণ করুন: ম্যাপলিব্রে ভেক্টর জিআইএস, ওএসআরএম রুট নেভিগেশন সহ ৬৪ জেলার মানচিত্র, ৮ বিভাগীয় অ্যাটলাস ও স্যাটেলাইট লেয়ার।')
+                : viewMode === 'settlement_map'
+                ? (language === 'en'
+                    ? 'Official Ministry of Land / DLRS digital cadastral map search engine with cascading Division, District, Survey (CS/SA/RS/BS/BDS), Thana, Mouza, and Dag querying.'
+                    : 'ভূমি রেকর্ড ও জরিপ অধিদপ্তর (DLRS)-এর অফিশিয়াল ডিজিটাল মৌজা নকশা অনুসন্ধান। বিভাগ, জেলা, জরিপ (CS/SA/RS/BS/BDS), থানা, মৌজা ও দাগ অনুযায়ী অনুসন্ধান।')
+                : viewMode === 'rajuk_wplrs'
+                ? (language === 'en'
+                    ? 'Official Rajdhani Unnayan Kartripakkha (RAJUK) Web-based Plot & Land Record System (WPLRS) with Banani, Gulshan, Baridhara, Uttara, and Purbachal model town masterplans.'
+                    : 'রাজউক-এর অফিশিয়াল ওয়েব-বেজড প্লট ও ভূমি রেকর্ড সিস্টেম (WPLRS)। বনানী, গুলশান, বারিধারা, উত্তরা ও পূর্বাচল মাস্টারপ্ল্যানের ক্যাডাস্ট্রাল নকশা ও বরাদ্দ রেকর্ড।')
                 : (language === 'en'
                     ? 'Synchronized tabular registry of all mouza parcels with automated title reconciliation, boundary verification, and deed status.'
                     : 'ডিজিটাল খতিয়ান ও দাগ রেজিস্ট্রি তালিকা। এক ক্লিকে দলিল সম্পাদন ও নাগরিক পরচা যাচাই করুন।')}
@@ -314,7 +338,7 @@ export const DlrsMouzaMapView: React.FC = () => {
           </div>
 
           {/* View Mode Switcher Buttons */}
-          <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-[#1b1b1f] rounded-lg border border-zinc-200 dark:border-[#27272a] shrink-0 self-start lg:self-center shadow-xs">
+          <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-[#1b1b1f] rounded-lg border border-zinc-200 dark:border-[#27272a] shrink-0 self-start lg:self-center shadow-xs flex-wrap">
             <button
               type="button"
               onClick={() => setViewMode('mouza_sheet')}
@@ -339,6 +363,32 @@ export const DlrsMouzaMapView: React.FC = () => {
             >
               <Globe2 className="w-3.5 h-3.5" />
               <span>{language === 'en' ? 'Bangladesh Map & GIS' : 'বাংলাদেশ মানচিত্র ও জিআইএস'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('settlement_map')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-sans transition-all cursor-pointer focus:outline-none ${
+                viewMode === 'settlement_map'
+                  ? 'bg-amber-600 text-white font-semibold shadow-xs'
+                  : 'text-zinc-600 dark:text-[#a1a1aa] hover:text-zinc-900 dark:hover:text-[#f4f4f5] hover:bg-zinc-200/60 dark:hover:bg-[#242429]'
+              }`}
+            >
+              <Map className="w-3.5 h-3.5 text-amber-400" />
+              <span>{language === 'en' ? 'DLRS Settlement' : 'ডিএলআরএস ম্যাপ'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('rajuk_wplrs')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-sans transition-all cursor-pointer focus:outline-none ${
+                viewMode === 'rajuk_wplrs'
+                  ? 'bg-emerald-600 text-white font-semibold shadow-xs'
+                  : 'text-zinc-600 dark:text-[#a1a1aa] hover:text-zinc-900 dark:hover:text-[#f4f4f5] hover:bg-zinc-200/60 dark:hover:bg-[#242429]'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{language === 'en' ? 'RAJUK WPLRS' : 'রাজউক WPLRS'}</span>
             </button>
 
             <button
@@ -826,6 +876,24 @@ export const DlrsMouzaMapView: React.FC = () => {
               </table>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* ── MODE 3: DLRS SETTLEMENT DIGITAL MOUZA MAP SEARCH ───────── */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {viewMode === 'settlement_map' && (
+        <div className="space-y-6 animate-fade-in">
+          <SettlementMapSearchViewer />
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* ── MODE 4: RAJUK WPLRS MODEL TOWN GIS & LAND RECORDS ─────── */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {viewMode === 'rajuk_wplrs' && (
+        <div className="space-y-6 animate-fade-in">
+          <RajukWplrsViewer />
         </div>
       )}
 
