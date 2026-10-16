@@ -1,4 +1,4 @@
-import { Citizen, KhatianRecord, DeedRecord, MutationCase, AuditLogRecord, GovSmsLog, WarisanEstateCase } from './types';
+import { KhatianRecord, DeedRecord, MutationCase, AuditLogRecord, GovSmsLog, WarisanEstateCase, Citizen } from '@/types';
 
 export const INITIAL_CITIZENS: Citizen[] = [
   {
@@ -73,7 +73,7 @@ export const INITIAL_CITIZENS: Citizen[] = [
   },
 ];
 
-export const INITIAL_KHATIANS: KhatianRecord[] = [
+export const INITIAL_KHATIANS: any[] = [
   {
     id: 'plot-1',
     khatianNo: 'BS-1001',
@@ -372,7 +372,7 @@ export const INITIAL_KHATIANS: KhatianRecord[] = [
   },
 ];
 
-export const INITIAL_DEEDS: DeedRecord[] = [
+export const INITIAL_DEEDS: any[] = [
   {
     id: 'deed-1',
     deedNo: 'DEED-2026-9001',
@@ -439,7 +439,7 @@ export const INITIAL_DEEDS: DeedRecord[] = [
   },
 ];
 
-export const INITIAL_MUTATIONS: MutationCase[] = [
+export const INITIAL_MUTATIONS: any[] = [
   {
     id: 'mut-1',
     trackingId: 'MUT-2026-5001',

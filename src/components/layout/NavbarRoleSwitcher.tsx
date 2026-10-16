@@ -1,7 +1,10 @@
 'use client';
 
 import React from 'react';
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { 
+  MapPin,
+  RotateCcw,
   FileCheck2, 
   Layers, 
   UserCheck, 
@@ -27,7 +30,10 @@ export const NavbarRoleSwitcher: React.FC = () => {
     khatians,
     smsLogs,
     setIsSmsDrawerOpen,
-    setIsWarisanModalOpen
+    setIsWarisanModalOpen,
+    setIsResetModalOpen,
+    isDistrictExplorerOpen,
+    setIsDistrictExplorerOpen
   } = useLandRegistry();
 
   const lockedPlotsCount = khatians.filter(k => k.isMortgaged || k.hasCourtCase || k.isDcAcquisition).length;
@@ -96,6 +102,20 @@ export const NavbarRoleSwitcher: React.FC = () => {
                 title={language === 'en' ? 'Warisan Calculator' : 'ওয়ারিশান ক্যালকুলেটর'}
               >
                 <Users className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsDistrictExplorerOpen(true)}
+                className="p-1.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-xs font-bold"
+                title={language === "en" ? "64-District GIS Map" : "৬৪ জেলা জিআইএস ম্যাপ"}
+              >
+                <MapPin className="w-4 h-4 text-emerald-700" />
+              </button>
+              <button
+                onClick={() => setIsResetModalOpen(true)}
+                className="p-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-slate-900"
+                title={language === "en" ? "Reset Demo State" : "সিস্টেম রিসেট"}
+              >
+                <RotateCcw className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setIsSmsDrawerOpen(true)}
@@ -187,6 +207,32 @@ export const NavbarRoleSwitcher: React.FC = () => {
                 </span>
               )}
             </button>
+
+                        {/* Quick Action: 64 Districts GIS Explorer */}
+            <button
+              onClick={() => setIsDistrictExplorerOpen(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-emerald-300/80 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 text-emerald-950 text-xs font-black transition-all shadow-xs"
+              title={language === "en" ? "Open 64-District GIS Map" : "৬৪ জেলা জিআইএস ম্যাপ"}
+            >
+              <MapPin className="w-3.5 h-3.5 text-emerald-700" />
+              <span className="whitespace-nowrap">
+                {language === "en" ? "64-District GIS" : "জেলা ম্যাপ"}
+              </span>
+            </button>
+
+            {/* Quick Action: Reset Demo State */}
+            <button
+              onClick={() => setIsResetModalOpen(true)}
+              className="hidden sm:flex items-center justify-center p-2 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 transition-all shadow-xs"
+              title={language === "en" ? "Reset Demo Ledger" : "সিস্টেম রিসেট"}
+            >
+              <RotateCcw className="w-4 h-4 text-slate-600" />
+            </button>
+
+            {/* Dark/Light Theme Toggle */}
+            <div className="hidden sm:flex items-center">
+              <ThemeToggle />
+            </div>
 
             {/* Desktop Language Switcher */}
             <div className="hidden lg:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold shrink-0">
