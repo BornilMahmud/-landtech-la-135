@@ -1,6 +1,6 @@
 // Cryptographic, Fixed-Point Arithmetic, Merkle Hash-Chain, and QR Code utilities for SetuLand Smart Registry
 
-import { KhatianRecord, DeedRecord, AuditLogRecord } from './types';
+import { KhatianRecord, DeedRecord, AuditLogRecord } from '@/types';
 
 // ============================================================================
 // FIX 3: Strict 2-Decimal Fixed-Point Land Arithmetic & Bangladeshi Taka Formatting
@@ -234,11 +234,7 @@ export async function computeChainedHash(previousHash: string, dataPayload: stri
  * Verifies the integrity of the cryptographic Merkle Hash-Chain across audit logs,
  * deeds, and Khatian records. Returns whether the chain is 100% verified or broken.
  */
-export function verifyHashChain(
-  khatians: KhatianRecord[],
-  deeds: DeedRecord[],
-  auditLogs: AuditLogRecord[]
-): {
+export function verifyHashChain(khatians: any[], deeds: any[], auditLogs: any[]): {
   isValid: boolean;
   totalBlocksVerified: number;
   brokenBlockIndex?: number;
@@ -268,7 +264,8 @@ export function verifyHashChain(
 
   // 2. Verify all Khatians have valid 64-char hex recordHash
   for (const k of khatians) {
-    if (!k.recordHash || k.recordHash.length !== 64) {
+    const hash = k.recordHash || k.sha256Hash;
+    if (!hash || hash.length !== 64) {
       return {
         isValid: false,
         totalBlocksVerified: verifiedCount,
@@ -282,7 +279,8 @@ export function verifyHashChain(
 
   // 3. Verify Deeds have valid deedHash and block linkage
   for (const d of deeds) {
-    if (!d.deedHash || d.deedHash.length !== 64) {
+    const hash = d.deedHash || d.sha256Hash;
+    if (!hash || hash.length !== 64) {
       return {
         isValid: false,
         totalBlocksVerified: verifiedCount,

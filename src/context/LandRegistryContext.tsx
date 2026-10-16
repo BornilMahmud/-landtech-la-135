@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { 
   Language, 
   ActiveRole, 
@@ -38,6 +38,18 @@ import {
 import confetti from 'canvas-confetti';
 
 export interface LandRegistryContextType {
+    // Theme & Notifications
+  theme: "dark" | "light";
+  setTheme: (t: "dark" | "light") => void;
+  isResetModalOpen: boolean;
+  isDistrictExplorerOpen: boolean;
+  setIsDistrictExplorerOpen: (open: boolean) => void;
+  setIsResetModalOpen: (open: boolean) => void;
+  notification: { id: string; messageEn: string; messageBn?: string; type?: "success" | "info" | "warning" | "error" } | null;
+  showNotification: (msg: { en: string; bn?: string } | string, type?: "success" | "info" | "warning" | "error") => void;
+  clearNotification: () => void;
+  dismissNotification: () => void;
+
   isHydrated: boolean;
   citizens: Citizen[];
   khatians: KhatianRecord[];
@@ -382,6 +394,44 @@ export function evaluateFivePointCheck(
 
 export const LandRegistryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isHydrated, setIsHydrated] = useState<boolean>(false);
+  const [theme, setTheme] = useState<"dark" | "light">("light");
+  const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
+  const [isDistrictExplorerOpen, setIsDistrictExplorerOpen] = useState<boolean>(false);
+  const [notification, setNotification] = useState<{
+    id: string;
+    messageEn: string;
+    messageBn?: string;
+    type?: "success" | "info" | "warning" | "error";
+  } | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("setuland_theme_mode") || localStorage.getItem("theme-mode");
+      if (saved === "dark" || saved === "light") {
+        setTheme(saved as "dark" | "light");
+        if (typeof document !== "undefined") {
+          document.documentElement.classList.toggle("dark", saved === "dark");
+        }
+      }
+    } catch {}
+  }, []);
+
+  const showNotification = useCallback((
+    msg: { en: string; bn?: string } | string,
+    type: "success" | "info" | "warning" | "error" = "info"
+  ) => {
+    if (typeof msg === "string") {
+      setNotification({ id: Date.now().toString(), messageEn: msg, messageBn: msg, type });
+    } else {
+      setNotification({ id: Date.now().toString(), messageEn: msg.en, messageBn: msg.bn, type });
+    }
+  }, []);
+
+  const clearNotification = useCallback(() => {
+    setNotification(null);
+  }, []);
+
+  const dismissNotification = clearNotification;
   const [citizens, setCitizens] = useState<Citizen[]>(INITIAL_CITIZENS);
   const [khatians, setKhatians] = useState<KhatianRecord[]>(INITIAL_KHATIANS);
   const [deeds, setDeeds] = useState<DeedRecord[]>(INITIAL_DEEDS);
@@ -1592,6 +1642,16 @@ export const LandRegistryProvider: React.FC<{ children: React.ReactNode }> = ({ 
         queuedMutationsCount,
 
         resetDemoData,
+        theme,
+        setTheme,
+        isResetModalOpen,
+        setIsResetModalOpen,
+        isDistrictExplorerOpen,
+        setIsDistrictExplorerOpen,
+        notification,
+        showNotification,
+        clearNotification,
+        dismissNotification,
       }}
     >
       {children}
@@ -1606,3 +1666,5 @@ export const useLandRegistry = () => {
   }
   return context;
 };
+
+export const useLandApp = useLandRegistry;

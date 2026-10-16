@@ -1,0 +1,63 @@
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sbDarkGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#1b1b1f" />
+      <stop offset="100%" stopColor="#09090b" />
+    </linearGradient>
+    <linearGradient id="sbGoldGrad" x1="8" y1="8" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#f3e0b2" />
+      <stop offset="50%" stopColor="#d4a657" />
+      <stop offset="100%" stopColor="#9b6c2d" />
+    </linearGradient>
+  </defs>
+
+  <!-- Base Layered Near-Black Squircle -->
+  <rect width="48" height="48" rx="12" fill="url(#sbDarkGrad)" />
+  <rect x="0.5" y="0.5" width="47" height="47" rx="11.5" stroke="#27272a" stroke-width="1" />
+
+  <!-- Cadastral Mouza Grid Blueprint Guidelines -->
+  <path d="M12 16H36M12 24H36M12 32H36" stroke="#27272a" stroke-width="0.8" stroke-dasharray="1.5 1.5" />
+  <path d="M16 12V36M24 12V36M32 12V36" stroke="#27272a" stroke-width="0.8" stroke-dasharray="1.5 1.5" />
+
+  <!-- Isometric Land Parcel 1 (Bottom Ledger Layer) -->
+  <polygon
+    points="24,36 12,29 24,22 36,29"
+    fill="#121215"
+    stroke="#27272a"
+    stroke-width="1.2"
+  />
+
+  <!-- Isometric Land Parcel 2 (Middle Verified Parcel) -->
+  <polygon
+    points="24,30 13,24 24,18 35,24"
+    fill="#1b1b1f"
+    stroke="url(#sbGoldGrad)"
+    stroke-width="1.4"
+  />
+
+  <!-- Smart Digital Cadastral Boundary (Top Facet) -->
+  <polygon
+    points="24,24 14,18.5 24,13 34,18.5"
+    fill="url(#sbGoldGrad)"
+    fill-opacity="0.25"
+    stroke="#d4a657"
+    stroke-width="1.6"
+  />
+
+  <!-- Cryptographic Hash Verification Node at Center -->
+  <circle cx="24" cy="18.5" r="2.8" fill="#d4a657" stroke="#09090b" stroke-width="1" />
+  <circle cx="24" cy="18.5" r="1.2" fill="#09090b" />
+
+  <!-- Smart Bhoomi Apex Node / Verification Beam -->
+  <path
+    d="M24 13V8"
+    stroke="url(#sbGoldGrad)"
+    stroke-width="1.8"
+    stroke-linecap="round"
+  />
+  <circle cx="24" cy="7.5" r="2" fill="#d4a657" />
+
+  <!-- Institutional Integrity Rings -->
+  <circle cx="14" cy="18.5" r="1.5" fill="#4ade80" />
+  <circle cx="34" cy="18.5" r="1.5" fill="#60a5fa" />
+</svg>
